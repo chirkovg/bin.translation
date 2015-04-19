@@ -15,5 +15,6 @@
 size_t textsize(const lexem*);
 size_t marksize(const lexem*);
 size_t doublesize(const lexem*);
+FILE* makeheader(const lexem*);
 
 #endif /* defined(__bin_translation__header__) */

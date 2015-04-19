@@ -15,7 +15,6 @@
 int main(int argc, const char * argv[])
 {
     lexem* source = getbuf("/Users/chirkovg/code");
-    std::cout << doublesize(source);
-    
+    makeheader(source);
     return 0;
 }
