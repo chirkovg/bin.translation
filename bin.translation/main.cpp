@@ -8,11 +8,14 @@
 
 #include <iostream>
 #include <stdio.h>
+#include "codification.h"
+#include "reader.h"
+#include "header.h"
 
 int main(int argc, const char * argv[])
 {
-    int x[] = {258};
-    FILE* res = fopen("res", "wb");
-    fwrite(x, 1, 4, res);
+    lexem* source = getbuf("/Users/chirkovg/code");
+    std::cout << doublesize(source);
+    
     return 0;
 }

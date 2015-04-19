@@ -181,3 +181,8 @@ size_t operation::printop(FILE* dest, uint32_t mark)
     }
     else return 0;
 }
+
+size_t operation::getsize()
+{
+    return size;
+}

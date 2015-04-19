@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		836066731AE39E4C00A88F42 /* reader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 83DACD731AD7B8F400EE5004 /* reader.cpp */; };
 		836066761AE3A67D00A88F42 /* header.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 836066741AE3A67D00A88F42 /* header.cpp */; };
+		8367D5D81AE3B2B1007807AC /* operations.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8324C4841AD969740063ACC2 /* operations.cpp */; };
 		83DACD6D1AD7B89700EE5004 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 83DACD6C1AD7B89700EE5004 /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -135,6 +136,7 @@
 				836066761AE3A67D00A88F42 /* header.cpp in Sources */,
 				836066731AE39E4C00A88F42 /* reader.cpp in Sources */,
 				83DACD6D1AD7B89700EE5004 /* main.cpp in Sources */,
+				8367D5D81AE3B2B1007807AC /* operations.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

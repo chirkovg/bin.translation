@@ -10,5 +10,10 @@
 #define __bin_translation__header__
 
 #include <stdio.h>
+#include "reader.h"
+
+size_t textsize(const lexem*);
+size_t marksize(const lexem*);
+size_t doublesize(const lexem*);
 
 #endif /* defined(__bin_translation__header__) */

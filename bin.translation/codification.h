@@ -9,6 +9,10 @@
 #ifndef Stack_proc_codification_h
 #define Stack_proc_codification_h
 
+#include <cstdlib>
+#include <cstdio>
+#include <stdint.h>
+
 
 enum OP {WRONGOP = 0, END = 101, ADD, SUB,
     DIV, MUL, RET, PUSHAX, PUSHBX,
@@ -19,12 +23,13 @@ class operation
 {
 public:
     operation(OP op);
-    ~operation();
+    //~operation();
     size_t printop(FILE* dest, uint32_t mark);
+    size_t getsize();
 private:
     size_t size;
     OP op;
-    uint8_t* instr;
+    const uint8_t* instr;
 };
 
 const uint8_t exitinst[] = {0xb8, 0x01, 0x00, 0x00, 0x02, 0xbf, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x05, 0xc3};
@@ -75,6 +80,29 @@ const uint8_t jaeinst[] = {0xf2, 0x0f, 0x10, 0x45, 0x00, 0x48, 0x83, 0xed, 0x10,
 const uint8_t jbinst[] = {0xf2, 0x0f, 0x10, 0x45, 0x00, 0x48, 0x83, 0xed, 0x10, 0x66, 0x0f, 0x2f, 0x45, 0x08, 0x73, 0x04, 0x41, 0xff, 0xa2};
 
 const uint8_t jbeinst[] = {0xf2, 0x0f, 0x10, 0x45, 0x00, 0x48, 0x83, 0xed, 0x10, 0x66, 0x0f, 0x2f, 0x45, 0x08, 0x77, 0x04, 0x41, 0xff, 0xa2};
+
+/*const operation addop(ADD);
+const operation subop(SUB);
+const operation divop(DIV);
+const operation mulop(MUL);
+const operation jeop(JE);
+const operation jneop(JNE);
+const operation jaop(JA);
+const operation jaeop(JAE);
+const operation jbop(JB);
+const operation jbeop(JBE);
+const operation jmpop(JMP);
+const operation callop(CALL);
+const operation retop(RET);
+const operation pushaxop(PUSHAX);
+const operation pushbxop(PUSHBX);
+const operation pushcxop(PUSHCX);
+const operation pushdxop(PUSHDX);
+const operation popaxop(POPAX);
+const operation popbxop(POPBX);
+const operation popcxop(POPCX);
+const operation popdxop(POPDX);
+const operation pushop(PUSH);*/
 
 #endif
 
