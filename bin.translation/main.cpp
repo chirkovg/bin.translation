@@ -15,6 +15,6 @@
 int main(int argc, const char * argv[])
 {
     lexem* source = getbuf("/Users/chirkovg/code");
-    makeheader(source);
+    translate(source);
     return 0;
 }

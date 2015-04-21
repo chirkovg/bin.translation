@@ -14,7 +14,7 @@
 
 operation::operation(OP op)
 {
-    op = op;
+    this -> op = op;
     switch (op)
     {
         case WRONGOP:
@@ -166,16 +166,16 @@ operation::operation(OP op)
 
 size_t operation::printop(FILE* dest, uint32_t mark)
 {
-    if (op <= 100) return 0;
-    else if (op < 115)
+    if (op < END) return 0;
+    else if (op < JE)
     {
         fwrite(instr, size, sizeof(uint8_t), dest);
         return size;
     }
-    else if (op <= 123)
+    else if (op <= CALL)
     {
         fwrite(instr, size - 4, sizeof(uint8_t), dest);
-        uint32_t addr = 0x8*mark;
+        uint32_t addr = sizeof(double)*mark;
         fwrite(&addr, 1, sizeof(addr), dest);
         return size;
     }
