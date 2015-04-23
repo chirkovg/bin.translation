@@ -6,11 +6,7 @@
 //  Copyright (c) 2015 Григорий Чирков. All rights reserved.
 //
 
-#include <stdio.h>
 #include "codification.h"
-#include <iostream>
-#include <cstdlib>
-
 
 operation::operation(OP op)
 {
@@ -19,12 +15,11 @@ operation::operation(OP op)
     {
         case WRONGOP:
         {
-            puts("ERROR:WRONGOP");
-            abort();
+            assert(WRONGOP);
         }
         case END:
         {
-            size = 13;
+            size = 35;
             instr = exitinst;
             break;
         }
@@ -181,6 +176,7 @@ size_t operation::printop(FILE* dest, uint32_t mark)
     }
     else return 0;
 }
+
 
 size_t operation::getsize()
 {

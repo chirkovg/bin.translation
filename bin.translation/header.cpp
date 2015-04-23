@@ -7,7 +7,6 @@
 //
 
 #include "header.h"
-#define MARKDATASIZE 800
 
 size_t textsize(const lexem* source)
 {
@@ -94,10 +93,14 @@ size_t doublesize(const lexem* source)
 }
 
 
-FILE* translate(const lexem* source)
+void translate(const lexem* source, const char* output)
 {
     assert(source);
-    FILE* res = fopen("/Users/chirkovg/res", "wb");
+    FILE* res = nullptr;
+    if (output == nullptr)
+        res = fopen("a.out", "wb");
+    else
+        res = fopen(output, "wb");
     assert(res);
     
     struct mach_header_64* header = makeheader();
@@ -113,34 +116,39 @@ FILE* translate(const lexem* source)
     assert(textseg);
     fwrite(textseg, 1, sizeof(*textseg), res);
     
-    struct section_64* textsect = maketextsect(zeroseg -> vmsize, textsectsize);
+    struct section_64* textsect = maketextsect(textsectsize, textseg -> filesize);
     assert(textsect);
     fwrite(textsect, 1, sizeof(*textsect), res);
     
     
     size_t datadoublesize = doublesize(source);
     size_t datamarksize = MARKDATASIZE;
-    struct segment_command_64* dataseg = makedataseg(textsect -> addr + textsect -> size,
-                                                     textsect -> offset + textsect -> size,
-                                                     datadoublesize, datamarksize);
+    struct segment_command_64* dataseg = makedataseg(textseg -> vmsize + ALIGNNUM, textseg -> vmsize, datadoublesize + datamarksize);
     assert(dataseg);
     fwrite(dataseg, 1, sizeof(*dataseg), res);
     
     
-    struct section_64* datasect = makedatasect(textsect -> addr + textsect -> size,
+    struct section_64* datasect = makedatasect(dataseg -> vmaddr,
                                                datadoublesize + datamarksize,
-                                               textsect -> offset + textsect -> size);
+                                               dataseg -> fileoff);
     assert(datasect);
     fwrite(datasect, 1, sizeof(*datasect), res);
     
-    void* thread = makethread(textsect -> addr, datasect -> addr + MARKDATASIZE, datasect -> addr, datasect -> addr + MARKDATASIZE + datadoublesize);
+    void* thread = makethread(textsect -> addr, datasect -> addr + MARKDATASIZE,
+                              datasect -> addr, datasect -> addr + MARKDATASIZE + datadoublesize);
     fwrite(thread, 1, sizeof(struct thread_command) + sizeof(struct x86_thread_state), res);
-
-    filltextsect(source, res);
     
-    filldatasect(source, textsect -> addr, res);
+    filltextsect(source, res, textsectsize, textseg -> filesize);
+    filldatasect(source, textsect -> addr, res, dataseg -> filesize, datasect -> size);
     
-    return res;
+    fclose(res);
+    free(header);
+    free(zeroseg);
+    free(textseg);
+    free(textsect);
+    free(dataseg);
+    free(datasect);
+    free(thread);
 }
 
 struct mach_header_64* makeheader()
@@ -152,7 +160,7 @@ struct mach_header_64* makeheader()
     header -> cpusubtype = CPU_SUBTYPE_X86_64_ALL;
     header -> filetype = MH_EXECUTE;
     header -> ncmds = 4;
-    header -> sizeofcmds = 376 + 184;
+    header -> sizeofcmds = 3*sizeof(struct segment_command_64) + 2*sizeof(struct section_64) + sizeof(struct thread_command) + sizeof(struct x86_thread_state);
     header -> flags = MH_NOUNDEFS;
     header -> reserved = 0;
     return header;
@@ -167,7 +175,7 @@ struct segment_command_64* makezeroseg()
     zeroseg -> cmdsize = sizeof(struct segment_command_64);
     memmove(zeroseg -> segname, SEG_PAGEZERO, sizeof(SEG_PAGEZERO));
     zeroseg -> vmaddr = 0;
-    zeroseg -> vmsize = 4096;
+    zeroseg -> vmsize = ALIGNNUM;
     zeroseg -> fileoff = 0;
     zeroseg -> filesize = 0;
     zeroseg -> maxprot = VM_PROT_NONE;
@@ -177,7 +185,7 @@ struct segment_command_64* makezeroseg()
     return zeroseg;
 }
 
-struct segment_command_64* maketextseg(size_t size, uint64_t vmaddr)
+struct segment_command_64* maketextseg(size_t textsectsize, uint64_t vmaddr)
 {
     
     struct segment_command_64* textseg = (struct segment_command_64*) calloc(1, sizeof(*textseg));
@@ -186,12 +194,20 @@ struct segment_command_64* maketextseg(size_t size, uint64_t vmaddr)
     textseg -> cmdsize = sizeof(struct segment_command_64) + sizeof(struct section_64);
     memmove(textseg -> segname, SEG_TEXT, sizeof(SEG_TEXT));
     textseg -> vmaddr = vmaddr;
-    textseg -> vmsize = size;
-    textseg -> fileoff = sizeof(struct mach_header_64) +
-                         3*sizeof(struct segment_command_64) +
-                         2*sizeof(struct section_64) + sizeof(thread_command) +
-                         sizeof(x86_thread_state);
-    textseg -> filesize = size;
+    uint64_t vmsize = ALIGNNUM;
+    
+    size_t loadcmdsize = sizeof(struct mach_header_64) +
+    3*sizeof(struct segment_command_64) +
+    2*sizeof(struct section_64) + sizeof(thread_command) +
+    sizeof(x86_thread_state);
+    while (vmsize < textsectsize + loadcmdsize)
+    {
+        vmsize += ALIGNNUM;
+    }
+    
+    textseg -> vmsize = vmsize;
+    textseg -> fileoff = 0;
+    textseg -> filesize = vmsize;
     textseg -> maxprot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
     textseg -> initprot = VM_PROT_READ | VM_PROT_EXECUTE;
     textseg -> nsects = 1;
@@ -199,19 +215,15 @@ struct segment_command_64* maketextseg(size_t size, uint64_t vmaddr)
     return textseg;
 }
 
-struct section_64* maketextsect(uint64_t addr, size_t size)
+struct section_64* maketextsect(size_t size, size_t textsegsize)
 {
     struct section_64* textsect = (struct section_64*) calloc(1, sizeof(*textsect));
     assert(textsect);
     memmove(textsect -> sectname, SECT_TEXT, sizeof(SECT_TEXT));
     memmove(textsect -> segname, SEG_TEXT, sizeof(SEG_TEXT));
-    textsect -> addr = addr;
+    textsect -> addr = ALIGNNUM + (textsegsize - size);
     textsect -> size = size;
-    textsect -> offset = sizeof(struct mach_header_64) +
-                         3*sizeof(segment_command_64) +
-                         2*sizeof(section_64) +
-                         sizeof(thread_command) +
-                         sizeof(x86_thread_state);
+    textsect -> offset = (uint32_t)(textsegsize - size);
     textsect -> align = 0;
     textsect -> reloff = 0;
     textsect -> nreloc = 0;
@@ -223,8 +235,7 @@ struct section_64* maketextsect(uint64_t addr, size_t size)
 }
 
 
-struct segment_command_64* makedataseg(uint64_t addr, uint64_t offset,
-                                       size_t doublesize, size_t marksize)
+struct segment_command_64* makedataseg(uint64_t addr, uint64_t offset, size_t datasize)
 {
     struct segment_command_64* dataseg = (struct segment_command_64*) calloc(1, sizeof(*dataseg));
     assert(dataseg);
@@ -232,9 +243,11 @@ struct segment_command_64* makedataseg(uint64_t addr, uint64_t offset,
     dataseg -> cmdsize = sizeof(struct segment_command_64) + sizeof(struct section_64);
     memmove(dataseg -> segname, SEG_DATA, sizeof(SEG_DATA));
     dataseg -> vmaddr = addr;
-    dataseg -> vmsize = doublesize + marksize;
+    uint64_t size = ALIGNNUM;
+    while (size < datasize) size += ALIGNNUM;
+    dataseg -> vmsize = size;
     dataseg -> fileoff = offset;
-    dataseg -> filesize = doublesize + marksize;
+    dataseg -> filesize = size;
     dataseg -> maxprot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
     dataseg -> initprot = VM_PROT_READ | VM_PROT_WRITE;
     dataseg -> nsects = 1;
@@ -261,13 +274,13 @@ struct section_64* makedatasect(uint64_t addr, uint64_t size, uint64_t offset)
     return datasect;
 }
 
-void filldatasect(const lexem* source, uint64_t textsectaddr, FILE* dest)
+void filldatasect(const lexem* source, uint64_t textsectaddr, FILE* dest,
+                  size_t datasegsize, size_t datasectsize)
 {
     assert(source);
     const lexem* ptr = source;
     
-    
-//marks
+    /*marks*/
     bool ismark[101] = {false};
     while (ptr -> op != EOC)
     {
@@ -281,7 +294,6 @@ void filldatasect(const lexem* source, uint64_t textsectaddr, FILE* dest)
         {
             ptr++;
         }
-        
         ptr++;
     }
     
@@ -298,9 +310,7 @@ void filldatasect(const lexem* source, uint64_t textsectaddr, FILE* dest)
         }
     }
     
-    
-    
-//double
+    /*double*/
     ptr = source;
     while (ptr -> op != EOC)
     {
@@ -312,6 +322,13 @@ void filldatasect(const lexem* source, uint64_t textsectaddr, FILE* dest)
         else if (ptr -> op >= JE) ptr++;
         ptr++;
     }
+    
+    /*filling with 0x00*/
+    uint64_t nulcount = datasegsize - datasectsize;
+    void* nulls = calloc(nulcount, sizeof(uint8_t));
+    assert(nulls);
+    fwrite(nulls, nulcount, sizeof(uint8_t), dest);
+    free(nulls);
 }
 
 
@@ -319,7 +336,10 @@ uint64_t getmarkaddr(uint32_t mark, const lexem* source, uint64_t textsectaddr)
 {
     assert(source);
     uint64_t res = 0;
-    if (mark > MAXMARK) return 0;
+    if (mark > MAXMARK)
+    {
+        assert(WRONGMARK);
+    }
     const lexem* ptr = source;
     while (ptr -> op != EOC)
     {
@@ -341,9 +361,20 @@ uint64_t getmarkaddr(uint32_t mark, const lexem* source, uint64_t textsectaddr)
 
 
 
-void filltextsect(const lexem* source, FILE* dest)
+void filltextsect(const lexem* source, FILE* dest, size_t textsectsize, size_t textsegsize)
 {
     assert(source);
+    uint64_t nulcount = (textsegsize - textsectsize) -
+                        (sizeof(struct mach_header_64) +
+                         3*sizeof(struct segment_command_64) +
+                         2*sizeof(struct section_64) +
+                         sizeof(thread_command) +
+                         sizeof(x86_thread_state));
+    
+    void* nulls = calloc(nulcount, sizeof(uint8_t));
+    fwrite(nulls, nulcount, sizeof(uint8_t), dest);
+    free(nulls);
+    
     const lexem* ptr = source;
     while (ptr -> mark)
     {
@@ -370,8 +401,11 @@ void filltextsect(const lexem* source, FILE* dest)
 
 void* makethread(uint64_t start, uint64_t doubleaddr, uint64_t markaddr, uint64_t stackaddr)
 {
-    struct thread_command* res = (struct thread_command*) calloc(1, sizeof(struct thread_command) + sizeof(struct x86_thread_state));
+    struct thread_command* res = (struct thread_command*)
+                                 calloc(1, sizeof(struct thread_command) +
+                                           sizeof(struct x86_thread_state));
     assert(res);
+    
     res -> cmd = LC_UNIXTHREAD;
     res -> cmdsize = sizeof(struct thread_command) + sizeof(struct x86_thread_state);
     
@@ -381,9 +415,30 @@ void* makethread(uint64_t start, uint64_t doubleaddr, uint64_t markaddr, uint64_
     state -> tsh.count = 42;
     
     memset(&(state -> uts.ts64), 0, 21*sizeof(uint64_t));
-    state -> uts.ts64.__rbp = stackaddr;
+    state -> uts.ts64.__rbp = stackaddr - 0x8;
     state -> uts.ts64.__r9 = doubleaddr;
-    state -> uts.ts64.__r10 = markaddr;
+    state -> uts.ts64.__r10 = markaddr - 0x8;
     state -> uts.ts64.__rip = start;
     return res;
+}
+
+struct uuid_command* makeuuid()
+{
+    struct uuid_command* uuid = (struct uuid_command*) calloc(1, sizeof(*uuid));
+    assert(uuid);
+    uuid -> cmd = LC_UUID;
+    uuid -> cmdsize = sizeof(*uuid);
+    memmove(uuid -> uuid, UUID, 16*sizeof(uint8_t));
+    return uuid;
+}
+
+struct version_min_command* makeversion()
+{
+    struct version_min_command* version = (struct version_min_command*)
+                                            calloc(1, sizeof(struct version_min_command));
+    assert(version);
+    version -> cmd = LC_VERSION_MIN_MACOSX;
+    version -> cmdsize = sizeof(*version);
+    version -> version = 0xA0600;
+    return version;
 }
