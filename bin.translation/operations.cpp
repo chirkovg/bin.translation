@@ -11,157 +11,157 @@
 operation::operation(OP op)
 {
     this -> op = op;
+#define MAKENOJMPOP(INST) \
+size = sizeof(INST);\
+instr = INST;\
+break;
+    
+#define MAKEJMPOP(INST)\
+size = sizeof(INST) + 4; \
+instr = INST;\
+break;
+    
+#define MAKEOP(INST) \
+if (op < JE) \
+    {\
+    MAKENOJMPOP(INST)\
+    }\
+else\
+{\
+    MAKEJMPOP(INST)\
+}\
+break;
+
+
     switch (op)
     {
         case WRONGOP:
         {
             assert(WRONGOP);
+            break;
         }
         case END:
         {
-            size = 35;
-            instr = exitinst;
-            break;
+            MAKEOP(EXITINST);
         }
         case ADD:
         {
-            size = 19;
-            instr = addinst;
-            break;
+            MAKEOP(ADDINST);
         }
         case DIV:
         {
-            size = 19;
-            instr = divinst;
-            break;
+            MAKEOP(DIVINST);
         }
         case MUL:
         {
-            size = 19;
-            instr = mulinst;
-            break;
+            MAKEOP(MULINST);
         }
         case SUB:
         {
-            size = 19;
-            instr = subinst;
-            break;
+            MAKEOP(SUBINST);
         }
         case JE:
         {
-            size = 23;
-            instr = jeinst;
-            break;
+            MAKEOP(JEINST);
         }
         case JNE:
         {
-            size = 23;
-            instr = jneinst;
-            break;
+            MAKEOP(JNEINST);
         }
         case JA:
         {
-            size = 23;
-            instr = jainst;
-            break;
+            MAKEOP(JAINST);
         }
         case JAE:
         {
-            size = 23;
-            instr = jaeinst;
-            break;
+            MAKEOP(JAEINST);
         }
         case JB:
         {
-            size = 23;
-            instr = jbinst;
-            break;
+            MAKEOP(JBINST);
         }
         case JBE:
         {
-            size = 23;
-            instr = jbeinst;
-            break;
+            MAKEOP(JBEINST);
         }
         case JMP:
         {
-            size = 7;
-            instr = jmpinst;
-            break;
+            MAKEOP(JMPINST);
         }
         case PUSH:
         {
-            size = 18;
-            instr = pushinst;
-            break;
+            MAKEOP(PUSHINST);
         }
         case PUSHAX:
         {
-            size = 9;
-            instr = pushaxinst;
-            break;
+            MAKEOP(PUSHAXINST);
         }
         case PUSHBX:
         {
-            size = 9;
-            instr = pushbxinst;
-            break;
+            MAKEOP(PUSHBXINST);
         }
         case PUSHCX:
         {
-            size = 9;
-            instr = pushcxinst;
-            break;
+            MAKEOP(PUSHCXINST);
         }
         case PUSHDX:
         {
-            size = 9;
-            instr = pushdxinst;
-            break;
+            MAKEOP(PUSHDXINST);
         }
         case POPAX:
         {
-            size = 9;
-            instr = popaxinst;
-            break;
+            MAKEOP(POPAXINST);
         }
         case POPBX:
         {
-            size = 9;
-            instr = popbxinst;
-            break;
+            MAKEOP(POPBXINST);
         }
         case POPCX:
         {
-            size = 9;
-            instr = popcxinst;
-            break;
+            MAKEOP(POPCXINST);
         }
         case POPDX:
         {
-            size = 9;
-            instr = popdxinst;
-            break;
+            MAKEOP(POPDXINST);
         }
         case CALL:
         {
-            size = 7;
-            instr = callinst;
-            break;
+            MAKEOP(CALLINST);
         }
         case RET:
         {
-            size = 1;
-            instr = retinst;
+            MAKEOP(RETINST);
+        }
+        case PRINT:
+        {
+            MAKEOP(PRINTINST);
+        }
+        case SCAN:
+        {
+            MAKEOP(SCANINST);
+        }
+        default:
+        {
+            assert(WRONGOP);
             break;
         }
-        
     }
+#undef MAKEOP
+#undef MAKEJMPOP
+#undef MAKENOJMPOP
 }
 
 size_t operation::printop(FILE* dest, uint32_t mark)
 {
     if (op < END) return 0;
+    else if (op == PUSH)
+    {
+        fwrite(instr, 9, sizeof(uint8_t), dest);
+        uint32_t addr = mark*8;
+        fwrite(&addr, 1, sizeof(uint32_t), dest);
+        fwrite(instr + 13, 5, sizeof(uint8_t), dest);
+        return size;
+    }
     else if (op < JE)
     {
         fwrite(instr, size, sizeof(uint8_t), dest);

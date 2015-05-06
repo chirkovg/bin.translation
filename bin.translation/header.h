@@ -38,5 +38,7 @@ struct dyld_info_command* makedyldinfo(uint64_t offset, uint64_t size);
 #define ALIGNNUM 4096
 #define MARKDATASIZE 800
 
+const double CENT = 1000.0;
+
 const uint8_t UUID[16] = {0x4C, 0x41, 0x5E, 0x5B, 0xE1, 0x6B, 0x34, 0xEA, 0x96, 0xd6, 0xdd, 0x0e, 0xe2, 0x72, 0x46, 0xc5};
 #endif /* defined(__bin_translation__header__) */

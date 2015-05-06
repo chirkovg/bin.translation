@@ -26,6 +26,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		83024C6F1AEE865C00A1435B /* x86_cmds.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = x86_cmds.h; sourceTree = "<group>"; };
 		8324C4841AD969740063ACC2 /* operations.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = operations.cpp; sourceTree = "<group>"; };
 		836066741AE3A67D00A88F42 /* header.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = header.cpp; sourceTree = "<group>"; };
 		836066751AE3A67D00A88F42 /* header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = header.h; sourceTree = "<group>"; };
@@ -67,12 +68,13 @@
 			isa = PBXGroup;
 			children = (
 				83DACD6C1AD7B89700EE5004 /* main.cpp */,
-				83DACD761AD7BC0A00EE5004 /* codification.h */,
 				83DACD731AD7B8F400EE5004 /* reader.cpp */,
 				83DACD741AD7B8F400EE5004 /* reader.h */,
 				8324C4841AD969740063ACC2 /* operations.cpp */,
 				836066741AE3A67D00A88F42 /* header.cpp */,
 				836066751AE3A67D00A88F42 /* header.h */,
+				83DACD761AD7BC0A00EE5004 /* codification.h */,
+				83024C6F1AEE865C00A1435B /* x86_cmds.h */,
 			);
 			path = bin.translation;
 			sourceTree = "<group>";

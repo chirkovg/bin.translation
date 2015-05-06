@@ -28,7 +28,7 @@ size_t textsize(const lexem* source)
             res += curop.getsize();
             ptr += 2;
         }
-        else if(ptr -> op >= END && ptr -> op <= POPDX)
+        else if(ptr -> op >= END && ptr -> op <= SCAN)
         {
             operation curop(ptr -> op);
             res += curop.getsize();
@@ -74,7 +74,7 @@ size_t doublesize(const lexem* source)
 {
     assert(source);
     const lexem* ptr = source;
-    size_t res = 0;
+    size_t res = 1;
     while (ptr -> mark != EOC)
     {
         if (ptr -> op == PUSH)
@@ -197,9 +197,10 @@ struct segment_command_64* maketextseg(size_t textsectsize, uint64_t vmaddr)
     uint64_t vmsize = ALIGNNUM;
     
     size_t loadcmdsize = sizeof(struct mach_header_64) +
-    3*sizeof(struct segment_command_64) +
-    2*sizeof(struct section_64) + sizeof(thread_command) +
-    sizeof(x86_thread_state);
+                         3*sizeof(struct segment_command_64) +
+                         2*sizeof(struct section_64) + sizeof(thread_command) +
+                         sizeof(x86_thread_state);
+    
     while (vmsize < textsectsize + loadcmdsize)
     {
         vmsize += ALIGNNUM;
@@ -309,8 +310,9 @@ void filldatasect(const lexem* source, uint64_t textsectaddr, FILE* dest,
             fwrite(&NOMARK, 1, sizeof(NOMARK), dest);
         }
     }
-    
+
     /*double*/
+    fwrite(&CENT, 1, sizeof(CENT), dest);
     ptr = source;
     while (ptr -> op != EOC)
     {
@@ -370,11 +372,12 @@ void filltextsect(const lexem* source, FILE* dest, size_t textsectsize, size_t t
                          2*sizeof(struct section_64) +
                          sizeof(thread_command) +
                          sizeof(x86_thread_state));
-    
+    //fwrite(&CENT, 1, sizeof(CENT), dest);
     void* nulls = calloc(nulcount, sizeof(uint8_t));
     fwrite(nulls, nulcount, sizeof(uint8_t), dest);
     free(nulls);
     
+    uint32_t pushcount = 1;
     const lexem* ptr = source;
     while (ptr -> mark)
     {
@@ -388,11 +391,15 @@ void filltextsect(const lexem* source, FILE* dest, size_t textsectsize, size_t t
                 uint32_t mark = ptr -> mark;
                 op.printop(dest, mark);
             }
+            else if (ptr -> op == PUSH)
+            {
+                op.printop(dest, pushcount);
+                pushcount++;
+                ptr++;
+            }
             else
             {
                 op.printop(dest, 0);
-                if (ptr -> op == PUSH)
-                    ptr++;
             }
             ptr++;
         }
